@@ -1,0 +1,67 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# === Virtual environments ===
+venv/
+env/
+.venv/
+ENV/
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Logs & temp files ===
+*.log
+nohup.out
+*.out
+2.py
+test.txt
+
+# === Large training data ===
+DISC-Law-SFT-Alpaca-*.json
+data/BioInstruct_train.json
+data/DialogSum_train.json
+data/gsm8k_train.json
+data/gsm8k_full.json
+data/*.parquet
+tests/*.parquet
+
+# === Model outputs & inference results in data/ ===
+data/BioInstruct_*_*.json
+data/DialogSum_*_*.json
+
+# === Model weights & checkpoints ===
+save_result/
+checkpoints/
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+
+# === Evaluation results (regenerable) ===
+eval_result/
+实验结果1/
+
+# === Bundled third-party libraries ===
+src/llamafactory/extras/transformers/
+
+# === Env files ===
+.env
+.env.local

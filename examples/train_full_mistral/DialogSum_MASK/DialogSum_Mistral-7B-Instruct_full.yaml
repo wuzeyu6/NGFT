@@ -1,0 +1,48 @@
+### model
+model_name_or_path: /mnt/shared-storage-user/large-model-center-share-weights/hf_hub/models--mistralai--Mistral-7B-Instruct-v0.3/snapshots/0d4b76e1efeb5eb6f6b5e757c79870472e04bd3a
+trust_remote_code: true
+zero_mask: 1
+fine_loss: 0
+finetune_class: "DialogSum_Mistral-7B-Instruct"
+
+### method
+stage: sft
+do_train: true
+finetuning_type: freeze
+freeze_trainable_layers: 100
+freeze_trainable_modules: 'mlp'
+deepspeed: examples/deepspeed/ds_z3_config.json  # choices: [ds_z0_config.json, ds_z2_config.json, ds_z3_config.json]
+
+### dataset
+dataset: DialogSum_full
+template: mistral
+cutoff_len: 4096
+# max_samples: 1000
+overwrite_cache: true
+preprocessing_num_workers: 16
+
+### output
+output_dir: model_result/DialogSum_MASK/DialogSum_Mistral-7B-Instruct_full
+logging_steps: 1
+save_steps: 0
+plot_loss: true
+# overwrite_output_dir: true
+save_total_limit: 1
+
+### train
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 1
+learning_rate: 2.0e-5
+num_train_epochs: 4.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+weight_decay: 0.1
+bf16: true
+ddp_timeout: 180000000
+
+### eval
+# val_size: 0.1
+# per_device_eval_batch_size: 1
+# eval_strategy: steps
+# eval_steps: 500
+
