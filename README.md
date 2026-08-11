@@ -6,11 +6,6 @@
 
 ### Unlocking Efficient Alignment Mechanisms for Large Language Models
 
-[![Paper](https://img.shields.io/badge/Paper-ACL%202026-red.svg)](https://github.com/wuzeyu6/NGFT)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.10+-green.svg)](https://www.python.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-orange.svg)](https://pytorch.org/)
-
 </div>
 
 ---
@@ -74,13 +69,6 @@ A novel loss function that aligns model activation patterns with **pre-computed 
 
 NGFT is evaluated on **Llama-3.1-8B**, **Qwen2.5-7B**, and **Mistral-7B** across three domain-specific datasets (GSM8K, BioInstruct, DialogSum) and three general benchmarks (MMLU, BBH, TyDiQA).
 
-<div align="center">
-
-<img src="assets/ngft_performance.png" alt="Performance Comparison" width="100%">
-
-</div>
-
-<div align="center">
 
 | Model | Method | GSM8K (Full) | DialogSum (Full) | BioInstruct (Full) |
 |:---|:---|:---:|:---:|:---:|
@@ -190,21 +178,6 @@ NGFT/
 
 ---
 
-## Citation
-
-If you find NGFT useful for your research, please cite:
-
-```bibtex
-@inproceedings{anonymous2026ngft,
-  title     = {Neuron-Guided Fine-Tuning: Unlocking Efficient Alignment Mechanisms for Large Language Models},
-  author    = {Anonymous},
-  booktitle = {Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (ACL)},
-  year      = {2026},
-  note      = {Under review}
-}
-```
-
----
 
 ## Acknowledgments
 
