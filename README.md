@@ -74,10 +74,10 @@ cd NGFT
 pip install -e ".[torch,metrics]"
 ```
 
-### 3. Data Selection (Standalone)
+### 3. Data Selection
 
 ```bash
-python data_selection.py \
+python neuron_data_selection.py \
     --model_path mistralai/Mistral-7B-Instruct-v0.3 \
     --data_path data/gsm8k_dataset.json \
     --output_path data/selected_data.json \
