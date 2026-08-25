@@ -53,7 +53,7 @@ Selects high-quality instruction data based on **neuron activation intensity**. 
 
 This median-centered strategy absorbs core samples from all sub-clusters, ensuring robustness to intra-class multimodal distributions.
 
-### (III) Neuron Activation Alignment Loss
+### (III) Neuron Alignment Loss
 
 A novel loss function that aligns model activation patterns with **pre-computed activation anchors** derived from ground-truth responses:
 
@@ -95,12 +95,14 @@ python pipeline_mistral/pipeline_GSM.py
 ```
 ---
 
-## Code Improvement
+## Core Code
+
+> If you only want to reference the core NGFT code, you can check these two files. They contain detailed explanations to help you integrate them into your own project.
 
 | File | Description |
 |:---|:---|
 | [neuron_data_selection.py](neuron_data_selection.py) | Neuron selection and data selection |
-| [trainer.py](trainer.py) | NGFT training, including updating targeted neuron parameters and neuron activation alignment loss |
+| [trainer.py](trainer.py) | NGFT training, including updating targeted neuron parameters and neuron alignment loss |
 
 
 
