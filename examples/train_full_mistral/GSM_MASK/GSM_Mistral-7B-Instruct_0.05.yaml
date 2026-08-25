@@ -1,5 +1,5 @@
 ### model
-model_name_or_path: /mnt/shared-storage-user/large-model-center-share-weights/hf_hub/models--mistralai--Mistral-7B-Instruct-v0.3/snapshots/0d4b76e1efeb5eb6f6b5e757c79870472e04bd3a
+model_name_or_path: mistralai/Mistral-7B-Instruct-v0.3
 trust_remote_code: true
 zero_mask: 1
 fine_loss: 0
@@ -11,7 +11,7 @@ do_train: true
 finetuning_type: freeze
 freeze_trainable_layers: 32
 freeze_trainable_modules: 'mlp'
-deepspeed: examples/deepspeed/ds_z3_config.json  # choices: [ds_z0_config.json, ds_z2_config.json, ds_z3_config.json]
+deepspeed: examples/deepspeed/ds_z2_config.json  # choices: [ds_z0_config.json, ds_z2_config.json, ds_z3_config.json]
 
 ### dataset
 dataset: GSM_Mistral-7B-Instruct_0.05

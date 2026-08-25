@@ -2443,7 +2443,7 @@ class Trainer:
             loss_save = 0
             label_ = -1
             for _ in range(total_updates):
-                #batch_num参数用于独立计算batch
+                #batch_num parameter used to independently calculate batch
                 batch_num += 1
                 num_batches = args.gradient_accumulation_steps if update_step != (total_updates - 1) else remainder
                 batch_samples, num_items_in_batch = self.get_batch_samples(epoch_iterator, num_batches)
@@ -2520,12 +2520,12 @@ class Trainer:
                         if len(list_loss) > total_updates*2:
                             data1 = np.mean(list_loss[-total_updates:])
                             data2 = np.mean(list_loss[-total_updates*2:-total_updates])
-                            # print("误差为：",(data2 - data1)/batch_size)
+                            # print("Error:",(data2 - data1)/batch_size)
                             list_down_rate.append((data2 - data1)/batch_size)
                             # print(loss_open)
                             if min(list_down_rate) not in list_down_rate[int(-total_updates*0.05):]:
                                 loss_open = True
-                        loss_save = 0  #重新置为0，进入下一个batch
+                        loss_save = 0  #Reset to 0, move to the next batch
                         # Since we perform prefetching, we need to manually set sync_gradients to True
                         self.accelerator.gradient_state._set_sync_gradients(True)
 
@@ -3645,14 +3645,14 @@ class Trainer:
         """
         def find_max_drop_token_index(model, inputs, tokenizer):
             """
-            生成最多10个Token，在[Index 1, Index 9]范围内寻找Drop Ratio最大的位置。
-            返回: int (Token的索引位置)
+            Generate up to 10 tokens, and find the position with the maximum Drop Ratio in the range [Index 1, Index 9].
+            Returns: int (the index position of the token)
             """
-            # 1. 构建输入
+            # 1. Build input
             import torch.nn.functional as F
             input_len = inputs.input_ids.shape[1]
 
-            # 2. 生成 (严格限制 max_new_tokens=10)
+            # 2. Generate (strictly limit max_new_tokens=10)
             with torch.no_grad():
                 outputs = model.generate(
                     **inputs,
@@ -3665,12 +3665,12 @@ class Trainer:
             scores = outputs.scores
             generated_tokens = outputs.sequences[0][input_len:]
 
-            # 如果生成长度太短无法计算（例如只生成了1个token），直接返回-1或0
+            # If the generated length is too short to compute (e.g., only 1 token generated), return -1 or 0 directly
             if len(scores) < 2:
                 return -1
 
             ppl_values = []
-            # 3. 计算 PPL
+            # 3. Compute PPL
             for i, step_logits in enumerate(scores):
                 step_logits = step_logits[0]
                 chosen_token_id = generated_tokens[i]
@@ -3683,8 +3683,8 @@ class Trainer:
             max_ratio = -1.0
             best_index = -1
 
-            # 遍历范围：从 Index 1 开始，直到倒数第二个token (因为最后一个token没有next_ppl)
-            # 也就是在 [1, len(ppl)-2] 范围内寻找
+            # Traversal range: from Index 1 to the second-to-last token (because the last token has no next_ppl)
+            # That is, search within the range [1, len(ppl)-2]
             search_end = len(ppl_values) - 1
 
             for i in range(1, search_end):
@@ -3702,10 +3702,10 @@ class Trainer:
 
             truncated_text = ""
             if best_index != -1:
-                # 切片获取 [0, best_index] 的 token
-                # Python切片是左闭右开，所以要取到 best_index，必须写 best_index + 1
+                # Slice to get tokens [0, best_index]
+                # Python slicing is left-closed and right-open, so to include best_index, you must write best_index + 1
                 target_tokens = generated_tokens[:best_index + 1]
-                # 解码为文本
+                # Decode to text
                 truncated_text = tokenizer.decode(target_tokens, skip_special_tokens=True)
             return best_index, truncated_text
 
@@ -3714,24 +3714,24 @@ class Trainer:
 
         def gengerate_best_inputs(tokenizer, inputs, data, now_output=0, model=None, token_index=None):
             """
-            修复后的版本：解决了缩进报错和 Batch Size 对齐问题。
+            Fixed version: resolves indentation errors and Batch Size alignment issues.
             """
             messages = []
 
-            # 获取当前设备
+            # Get current device
             device = inputs["input_ids"].device if "input_ids" in inputs else "cpu"
             token_ids_batch = inputs["input_ids"]
 
-            # 预先检查 tokenizer 设置
+            # Pre-check tokenizer settings
             if tokenizer.pad_token is None:
                 tokenizer.pad_token = tokenizer.eos_token
 
-            # 用于统计匹配失败的数量
+            # Used to count the number of failed matches
             fallback_count = 0
             for idx in range(len(token_ids_batch)):
-                # 1. 解码当前句子
+                # 1. Decode the current sentence
                 original_input = tokenizer.decode(token_ids_batch[idx], skip_special_tokens=True)
-                # 2. 尝试正则提取 User 内容
+                # 2. Try regex extraction of User content
                 user_pattern = r"user\s*([\s\S]*?)\s*assistant"
                 match = re.search(user_pattern, original_input, re.IGNORECASE)
                 found_match = False
@@ -3739,19 +3739,19 @@ class Trainer:
                 if match:
                     user_content = match.group(1).strip()
 
-                    # 3. 在 data 中查找原始数据
-                    # 注意：这里依然是暴力查找，如果慢建议建立哈希索引
+                    # 3. Search for original data in data
+                    # Note: This is still a brute-force search; if slow, consider building a hash index
                     matched_data = None
                     for item in data:
-                        # 增加安全性检查，防止字符串过短报错
+                        # Add safety check to prevent errors from strings being too short
                         input_str = item["input"]
                         if len(user_content) > 10 and len(input_str) > 20:
-                            # 稍微放宽匹配逻辑，或者使用精确匹配
+                            # Slightly relax matching logic, or use exact matching
                             if user_content[-12:-2] in input_str[-20:]:
                                 matched_data = item
                                 break
 
-                    # 4. 如果找到了数据，构建 Chat 模板
+                    # 4. If data is found, build Chat template
                     if matched_data:
                         messages.append([
                             {"role": "system", "content": matched_data["instruction"]},
@@ -3760,23 +3760,23 @@ class Trainer:
                         ])
                         found_match = True
 
-                # 5. 【关键修复】如果没匹配到正则，或者没在 data 里找到
-                # 必须填入一个占位符或者原文本，保证 Batch Size 不变！
+                # 5. [Key Fix] If the regex didn't match, or the data wasn't found
+                # Must fill in a placeholder or original text to keep the Batch Size unchanged!
                 if not found_match:
                     fallback_count += 1
-                    # 策略A：直接使用解码后的原文本（作为 user 输入，或者直接当做纯文本）
-                    # 这里假设如果不匹配，就把它当做一段普通的 user 文本处理
+                    # Strategy A: Directly use the decoded original text (as user input, or treat as plain text)
+                    # Here we assume that if it doesn't match, treat it as an ordinary user text
                     messages.append([
                         {"role": "user", "content": original_input}
                     ])
-                    # 或者 策略B：如果允许，直接把原始 input_ids 加回去（但这需要混合处理，比较麻烦）
+                    # Or Strategy B: If allowed, directly add the original input_ids back (but this requires mixed processing, which is more complicated)
 
             if fallback_count > 0:
                 print(
                     f"Warning: {fallback_count} samples could not be matched to original data. Used raw text fallback.")
 
             # ---------------------------------------------------------
-            # 批量处理文本并 Tokenize
+            # Batch process text and Tokenize
             # ---------------------------------------------------------
             processed_texts = []
             for text in messages:
@@ -3787,13 +3787,13 @@ class Trainer:
                 )
                 processed_texts.append(processed_text)
 
-            # 重新生成 inputs
+            # Regenerate inputs
             new_inputs = tokenizer(
                 processed_texts,
                 return_tensors='pt',
                 padding=True,
                 truncation=True,
-                max_length=inputs['input_ids'].shape[1] * 2  # 防止截断过短，给一个合理的上限
+                max_length=inputs['input_ids'].shape[1] * 2  # Prevent truncation from being too short, give a reasonable upper limit
             ).to(device)
             return new_inputs
 
@@ -3810,7 +3810,7 @@ class Trainer:
             with self.compute_loss_context_manager():
                 loss = self.compute_loss(model, inputs, num_items_in_batch=num_items_in_batch)
 
-        elif self.fine_loss == 1:  # 需要先在TrainingArguments中添加这个参数
+        elif self.fine_loss == 1:  # Need to add this parameter in TrainingArguments first
             with self.compute_loss_context_manager():
                 loss_entropy = self.compute_loss(model, inputs, num_items_in_batch=num_items_in_batch)
 
@@ -3832,7 +3832,7 @@ class Trainer:
                 elif "Mistral" in self.fintune_class:
                     model_path_ = "mistralai/Mistral-Nemo-Instruct-2407"
 
-                # 获取对应的数据集
+                # Get the corresponding dataset
                 # data_path = "data/{}_0.10.json".format(self.fintune_class)
                 # with open(data_path, 'r') as file:
                 #     data = json.load(file)
@@ -3865,24 +3865,24 @@ class Trainer:
                 loss_mse_gate = overlapping_cosine_similarity(gate, avg_gate)
                 loss_mse_up = overlapping_cosine_similarity(up, avg_up)
                 loss_mse_down = overlapping_cosine_similarity(down, avg_down)
-                # 总损失（等权重求和）
+                # Total loss (equal weight sum)
                 loss_sim_mse = (loss_mse_gate + loss_mse_up + loss_mse_down)
                 #
                 # print("loss_sim_kl:", loss_sim_kl)
                 print("loss_sim_mse:", loss_sim_mse)
                 loss = loss_entropy + loss_sim_mse
-                # 获取需要更新的参数列表
+                # Get the list of parameters to update
                 # loss = loss_entropy + loss_sim_mse
                 # params = [p for p in model.parameters() if p.requires_grad]
-                # # 3. 分别计算梯度 (关键：retain_graph=True)
-                # # torch.autograd.grad 返回的是一个元组，对应 params 中的每个参数的梯度
+                # # 3. Compute gradients separately (key: retain_graph=True)
+                # # torch.autograd.grad returns a tuple, corresponding to the gradient of each parameter in params
                 # grads_1 = torch.autograd.grad(loss_entropy, params, retain_graph=True, create_graph=False)
                 # grads_2 = torch.autograd.grad(loss_sim_mse, params, retain_graph=True, create_graph=False)
                 #
-                # # 4. 计算梯度范数 (Gradient Norm)
-                # # 将所有参数的梯度拉平并拼接，计算 L2 范数
+                # # 4. Compute gradient norm (Gradient Norm)
+                # # Flatten and concatenate all parameter gradients, compute L2 norm
                 # def compute_grad_norm(grads):
-                #     # 过滤掉 None 的梯度（有些参数可能没有梯度）
+                #     # Filter out None gradients (some parameters may not have gradients)
                 #     valid_grads = [g.view(-1) for g in grads if g is not None]
                 #     if not valid_grads:
                 #         return torch.tensor(0.0)
@@ -3893,21 +3893,21 @@ class Trainer:
                 # print(f"Loss 1 Gradient Norm: {norm_1.item():.4f}")
                 # print(f"Loss 2 Gradient Norm: {norm_2.item():.4f}")
                 # del grads_1, grads_2
-                # # 5. 计算平衡系数 lambda
-                # # 目标：我们要让 lambda * norm_2 ≈ norm_1
-                # # 所以 lambda = norm_1 / (norm_2 + epsilon)
-                # epsilon = 1e-8  # 防止除以零
+                # # 5. Compute the balancing coefficient lambda
+                # # Goal: we want lambda * norm_2 ≈ norm_1
+                # # So lambda = norm_1 / (norm_2 + epsilon)
+                # epsilon = 1e-8  # Prevent division by zero
                 # lambda_val = norm_1 / (norm_2 + epsilon)
-                # # 我们可以给 lambda 设置一个范围，防止极端情况
+                # # We can set a range for lambda to prevent extreme cases
                 # lambda_val = torch.clamp(lambda_val, min=0.001, max=100.0)
-                # # 如果不需要 lambda 参与梯度计算（只作为数值系数），使用 .detach()
+                # # If lambda doesn't need to participate in gradient computation (only as a numerical coefficient), use .detach()
                 # lambda_val = lambda_val.detach()
                 # print(f"Calculated Lambda: {lambda_val.item():.4f}")
                 # del norm_1, norm_2
                 # # ==========================================
-                # # 方法 A：重新组合 Loss 进行 Backward (最稳健，推荐)
+                # # Method A: Recompose Loss for Backward (most robust, recommended)
                 # # ==========================================
-                # # 此时图还在 (因为之前用了 retain_graph=True)
+                # # The graph is still alive (because retain_graph=True was used earlier)
                 # loss = loss_entropy + lambda_val * loss_sim_mse
 
 
@@ -3939,14 +3939,14 @@ class Trainer:
 
 
             # if bround == 0 and loss_entropy < 0.2:
-            #     print("非正常训练的第一次")
+            #     print("First time of abnormal training")
             #     bround = 1
             #     loss = 0.7 * loss_entropy + 0.3 * loss
             # elif bround == 1:
-            #     print("非正常训练")
+            #     print("Abnormal training")
             #     loss = 0.7 * loss_entropy + 0.3 * loss
             # elif loss_entropy > 0.2:
-            #     print("正常训练")
+            #     print("Normal training")
             #     loss = 1.0 * loss_entropy + 0 * loss
 
         del inputs
@@ -4043,13 +4043,13 @@ class Trainer:
 
         class LlamaFeatureExtractor:
             def __init__(self, model_input):
-                # 【关键点1】保存原始模型用于 forward
-                # 如果是 DDP 环境，这个 model_input 是 DistributedDataParallel 对象
-                # 我们必须用它来做 forward，否则梯度无法同步
+                # [Key Point 1] Save the original model for forward
+                # In a DDP environment, this model_input is a DistributedDataParallel object
+                # We must use it for forward, otherwise gradients cannot be synchronized
                 self.forward_model = model_input
                 
-                # 【关键点2】获取底层模型用于访问层结构 (Layers)
-                # 如果有 .module 属性，说明是 DDP/DataParallel，需要解包
+                # [Key Point 2] Get the underlying model to access layer structure (Layers)
+                # If there is a .module attribute, it means it's DDP/DataParallel and needs to be unwrapped
                 if hasattr(model_input, "module"):
                     self.base_model = model_input.module
                 else:
@@ -4062,7 +4062,7 @@ class Trainer:
                 self.register_hooks()
 
             def register_hooks(self):
-                # 定义钩子
+                # Define hooks
                 def gate_hook(module, input, output):
                     self.gate_outputs.append(torch.mean(output[:, :, :], dim=1))
 
@@ -4072,43 +4072,43 @@ class Trainer:
                 def down_hook(module, input, output):
                     self.down_outputs.append(torch.mean(output[:, :, :], dim=1))
 
-                # 【关键点3】使用 base_model 来寻找 layers
-                # 这样无论单卡还是多卡，都能找到 .model.layers
-                # 注意：这里假设模型结构是标准的 Llama 结构
+                # [Key Point 3] Use base_model to find layers
+                # This way, whether single-card or multi-card, .model.layers can be found
+                # Note: This assumes the model structure is standard Llama
                 if hasattr(self.base_model, "model") and hasattr(self.base_model.model, "layers"):
                     target_layers = self.base_model.model.layers
                 elif hasattr(self.base_model, "layers"):
-                    # 某些变体可能直接是 base_model.layers
+                    # Some variants may directly be base_model.layers
                     target_layers = self.base_model.layers
                 else:
-                    raise AttributeError("无法在模型中找到 layers 属性，请检查模型结构。")
+                    raise AttributeError("Cannot find the layers attribute in the model, please check the model structure.")
 
-                # 注册钩子
+                # Register hooks
                 for layer in target_layers:
                     self.hooks.append(layer.mlp.gate_proj.register_forward_hook(gate_hook))
                     self.hooks.append(layer.mlp.up_proj.register_forward_hook(up_hook))
                     self.hooks.append(layer.mlp.down_proj.register_forward_hook(down_hook))
 
             def extract_features(self, input_ids, attention_mask):
-                # 清理缓存
+                # Clear cache
                 self.gate_outputs.clear()
                 self.up_outputs.clear()
                 self.down_outputs.clear()
 
-                # 【关键点4】这里必须使用 self.forward_model (即可能包含 DDP 包装的模型)
-                # 这样 PyTorch DDP 才能在 backward 时正确同步梯度
-                # 不要加 torch.no_grad()
+                # [Key Point 4] Must use self.forward_model here (i.e., the model that may contain DDP wrapper)
+                # This way PyTorch DDP can correctly synchronize gradients during backward
+                # Do not add torch.no_grad()
                 self.forward_model(input_ids=input_ids, attention_mask=attention_mask)
 
-                # 堆叠张量
+                # Stack tensors
                 if not self.gate_outputs:
-                    raise RuntimeError("Hooks 没有捕获到任何数据，请检查层名称是否匹配。")
+                    raise RuntimeError("Hooks did not capture any data, please check if the layer names match.")
 
                 gate_features = torch.stack(self.gate_outputs, dim=0)
                 up_features = torch.stack(self.up_outputs, dim=0)
                 down_features = torch.stack(self.down_outputs, dim=0)
 
-                # 清理列表引用
+                # Clear list references
                 self.gate_outputs.clear()
                 self.up_outputs.clear()
                 self.down_outputs.clear()
@@ -4123,11 +4123,11 @@ class Trainer:
                 self.up_outputs = []
                 self.down_outputs = []
 
-        # 1. 生成阶段 (Generation) - 不需要梯度
+        # 1. Generation phase - no gradient needed
         model.eval()
-        
-        # 【关键点5】生成时建议使用解包后的模型
-        # 避免 DDP 尝试同步生成过程中的某些状态，且生成不需要梯度同步
+
+        # [Key Point 5] It is recommended to use the unwrapped model for generation
+        # Avoid DDP trying to sync certain states during generation, and generation doesn't need gradient sync
         generator_model = model.module if hasattr(model, "module") else model
 
         with torch.no_grad():
@@ -4138,25 +4138,25 @@ class Trainer:
                 pad_token_id=tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
             )
 
-        # 构造输入
+        # Build input
         gen_input_ids = generated_output
         gen_attention_mask = torch.ones_like(gen_input_ids)
 
-        # 2. 提取阶段 (Extraction) - 【需要梯度】
-        # 此时我们需要更新模型权重，使其对这些生成的 Token 产生特定的特征
-        
-        # 初始化提取器，传入原始 model (DDP wrapper)
+        # 2. Extraction phase - [gradient needed]
+        # At this point we need to update model weights to make it produce specific features for these generated tokens
+
+        # Initialize the extractor, pass in the original model (DDP wrapper)
         extractor = LlamaFeatureExtractor(model)
         try:
-            # 这里没有 torch.no_grad()，梯度开始记录
-            # 使用 DDP 模型进行 forward
+            # No torch.no_grad() here, gradients start recording
+            # Use DDP model for forward
             gate_all, up_all, down_all = extractor.extract_features(
                 input_ids=gen_input_ids,
                 attention_mask=gen_attention_mask
             )
 
-            # 3. 截取与聚合
-            # 梯度会通过 mean 和切片操作传播回去
+            # 3. Slice and aggregate
+            # Gradients will propagate back through mean and slicing operations
             last_token_gate = gate_all[:, :, :]
             last_token_up = up_all[:, :, :]
             last_token_down = down_all[:, :, :]
@@ -4174,11 +4174,11 @@ class Trainer:
 
     def compute_loss_1(self, model, inputs, data, tokenizer=None):
         """
-        Ground Truth 产生的特征 (Teacher / Target)
+        Features produced by Ground Truth (Teacher / Target)
         """
         from torch.nn.utils.rnn import pad_sequence
 
-        # 1. 准备数据逻辑 (保持你的逻辑不变)
+        # 1. Prepare data logic (keep your logic unchanged)
         class LlamaFeatureExtractor:
             def __init__(self, model, prompt_len):
                 self.model = model
@@ -4190,7 +4190,7 @@ class Trainer:
                 self.register_hooks()
 
             def register_hooks(self):
-                # 定义钩子：注意，这里不能detach，否则梯度会断开
+                # Define hooks: Note, do not detach here, otherwise gradients will break
                 def gate_hook(module, input, output):
                     self.gate_outputs.append(torch.mean(output[:, self.prompt_len:, :], dim=1))
 
@@ -4200,28 +4200,28 @@ class Trainer:
                 def down_hook(module, input, output):
                     self.down_outputs.append(torch.mean(output[:, self.prompt_len:, :], dim=1))
 
-                # 注册钩子
+                # Register hooks
                 for layer in self.model.model.layers:
                     self.hooks.append(layer.mlp.gate_proj.register_forward_hook(gate_hook))
                     self.hooks.append(layer.mlp.up_proj.register_forward_hook(up_hook))
                     self.hooks.append(layer.mlp.down_proj.register_forward_hook(down_hook))
 
             def extract_features(self, input_ids, attention_mask):
-                # 清理缓存
+                # Clear cache
                 self.gate_outputs.clear()
                 self.up_outputs.clear()
                 self.down_outputs.clear()
 
-                # 【关键修改】这里去掉了 torch.no_grad()
-                # 允许 PyTorch 构建计算图，从而保留梯度信息
+                # [Key Modification] Removed torch.no_grad() here
+                # Allow PyTorch to build the computation graph, thus preserving gradient information
                 self.model(input_ids=input_ids, attention_mask=attention_mask)
 
-                # 堆叠张量。因为 output 带有梯度，stack 后的结果也会带有梯度
+                # Stack tensors. Because output carries gradients, the stacked result will also carry gradients
                 gate_features = torch.stack(self.gate_outputs, dim=0)
                 up_features = torch.stack(self.up_outputs, dim=0)
                 down_features = torch.stack(self.down_outputs, dim=0)
 
-                # 清理列表引用，但张量本身返回出去了，计算图依然保留
+                # Clear list references, but the tensors themselves are returned, the computation graph is still preserved
                 self.gate_outputs.clear()
                 self.up_outputs.clear()
                 self.down_outputs.clear()
@@ -4232,7 +4232,7 @@ class Trainer:
                 for hook in self.hooks:
                     hook.remove()
                 self.hooks.clear()
-                # 再次确保引用清空
+                # Ensure references are cleared again
                 self.gate_outputs = []
                 self.up_outputs = []
                 self.down_outputs = []
@@ -4242,15 +4242,15 @@ class Trainer:
             tokenizer.pad_token = tokenizer.eos_token
 
         full_input_ids_list = []
-        prompt_lens = []  # 记录每个样本的 prompt 长度，因为 batch 内可能不同
+        prompt_lens = []  # Record the prompt length of each sample, as it may differ within the batch
 
         for idx in range(len(input_ids)):
             curr_input_ids = input_ids[idx]
-            prompt_lens.append(curr_input_ids.shape[0])  # 记录长度
+            prompt_lens.append(curr_input_ids.shape[0])  # Record length
 
             original_input = tokenizer.decode(curr_input_ids, skip_special_tokens=True)
 
-            # ... (你的正则匹配逻辑) ...
+            # ... (your regex matching logic) ...
             user_pattern = r"user\s*([\s\S]*?)\s*assistant"
             match = re.search(user_pattern, original_input, re.IGNORECASE)
             target_output_str = ""
@@ -4265,7 +4265,7 @@ class Trainer:
                             break
 
             if not target_output_str:
-                # Fallback: 为了防止报错，给一个空字符或者 EOS
+                # Fallback: To prevent errors, give an empty string or EOS
                 target_output_str = ""
 
             answer_tokens = \
@@ -4278,28 +4278,28 @@ class Trainer:
         gen_input_ids = pad_sequence(full_input_ids_list, batch_first=True, padding_value=tokenizer.pad_token_id)
         gen_attention_mask = (gen_input_ids != tokenizer.pad_token_id).long()
 
-        # 2. 提取阶段 - 【需要梯度】
+        # 2. Extraction phase - [gradient needed]
         slice_start_idx = inputs['input_ids'].shape[1]
         extractor = LlamaFeatureExtractor(model, slice_start_idx)
         try:
-            # 正常的前向传播，构建计算图
+            # Normal forward pass, build computation graph
             gate_all, up_all, down_all = extractor.extract_features(
                 input_ids=gen_input_ids,
                 attention_mask=gen_attention_mask
             )
-            # 3. 截取 (Slicing)
-            # 由于 Batch 中 Prompt 长度可能不一致，这里做一个简化处理：
-            # 取 batch 中最长的 prompt 长度作为切分点，或者更精细地处理。
-            # 为了代码简洁，这里沿用你之前的逻辑：取 inputs 的长度。
-            # 注意：如果 inputs 本身有 padding，这里可能会切错。
-            # 建议：使用上面记录的 prompt_lens 进行 mask 处理，但这里先保持你的逻辑。
+            # 3. Slicing
+            # Since Prompt lengths may be inconsistent within the Batch, here is a simplified approach:
+            # Take the longest prompt length in the batch as the split point, or handle more finely.
+            # For code simplicity, here we follow your previous logic: take the length of inputs.
+            # Note: If inputs itself has padding, this may slice incorrectly.
+            # Suggestion: Use the prompt_lens recorded above for mask processing, but here we keep your logic for now.
             # slice_start_idx = inputs['input_ids'].shape[1]
 
             target_gate = gate_all[:,:,:]
             target_up = up_all[:, :, :]
             target_down = down_all[:, :, :]
 
-            # 4. 聚合
+            # 4. Aggregate
             # [Layers, Dim]
             # final_gate = torch.mean(torch.mean(target_gate, dim=2), dim=1)
             # final_up = torch.mean(torch.mean(target_up, dim=2), dim=1)
@@ -4320,10 +4320,10 @@ class Trainer:
     #
     # def compute_loss_1(self, model, inputs, return_outputs=False, num_items_in_batch=None, max_length = None):
     #     """
-    #     优化内存释放的损失计算方法，添加钩子清理和显式内存回收
+    #     Loss computation method optimized for memory release, with hook cleanup and explicit memory reclamation
     #     """
     #     """
-    #         可微分特征提取器：保留梯度，支持反向传播
+    #         Differentiable feature extractor: preserves gradients, supports backpropagation
     #         """
     #
     #     class LlamaFeatureExtractor:
@@ -4332,11 +4332,11 @@ class Trainer:
     #             self.gate_outputs = []
     #             self.up_outputs = []
     #             self.down_outputs = []
-    #             self.hooks = []  # 保存钩子句柄，用于后续移除
+    #             self.hooks = []  # Save hook handles for later removal
     #             self.register_hooks()
     #
     #         def register_hooks(self):
-    #             # 定义钩子函数
+    #             # Define hook functions
     #             def gate_hook(module, input, output):
     #                 self.gate_outputs.append(output.unsqueeze(0))
     #                 # self.gate_outputs.append(output.detach().cpu().unsqueeze(0))
@@ -4349,7 +4349,7 @@ class Trainer:
     #                 self.down_outputs.append(output.unsqueeze(0))
     #                 # self.down_outputs.append(output.detach().cpu().unsqueeze(0))
     #
-    #             # 注册钩子并保存句柄
+    #             # Register hooks and save handles
     #             for layer in self.model.model.layers:
     #                 gate_hook_handle = layer.mlp.gate_proj.register_forward_hook(gate_hook)
     #                 up_hook_handle = layer.mlp.up_proj.register_forward_hook(up_hook)
@@ -4357,18 +4357,18 @@ class Trainer:
     #                 self.hooks.extend([gate_hook_handle, up_hook_handle, down_hook_handle])
     #
     #         def extract_features(self, inputs):
-    #             # 清空之前的缓存
+    #             # Clear previous cache
     #             self.gate_outputs.clear()
     #             self.up_outputs.clear()
     #             self.down_outputs.clear()
     #
     #             self.model(**inputs)
-    #             # 转换为numpy数组（此时可释放原始张量）
+    #             # Convert to numpy arrays (original tensors can be released at this point)
     #             gate_features = torch.cat(self.gate_outputs, dim=0)
     #             up_features = torch.cat(self.up_outputs, dim=0)
     #             down_features = torch.cat(self.down_outputs, dim=0)
     #
-    #             # 释放张量内存（清除引用）
+    #             # Release tensor memory (clear references)
     #             del self.gate_outputs[:]
     #             del self.up_outputs[:]
     #             del self.down_outputs[:]
@@ -4376,8 +4376,8 @@ class Trainer:
     #             return gate_features, up_features, down_features
     #
     #         def cleanup(self):
-    #             """清理钩子和内部变量，避免内存泄漏"""
-    #             # 移除所有钩子（关键步骤）
+    #             """Clean up hooks and internal variables to avoid memory leaks"""
+    #             # Remove all hooks (key step)
     #             for hook in self.hooks:
     #                 hook.remove()
     #             self.hooks.clear()
@@ -4385,7 +4385,7 @@ class Trainer:
     #         def __del__(self):
     #             self.cleanup()
     #
-    #     # 处理标签（保持原有逻辑）
+    #     # Process labels (keep original logic)
     #     if (self.label_smoother is not None or self.compute_loss_func is not None) and "labels" in inputs:
     #         labels = inputs.pop("labels")
     #     else:
@@ -4396,7 +4396,7 @@ class Trainer:
     #             loss_kwargs["num_items_in_batch"] = num_items_in_batch
     #         inputs = {**inputs, **loss_kwargs}
     #
-    #     # 提取特征
+    #     # Extract features
     #     extractor = LlamaFeatureExtractor(model)
     #     try:
     #         gate_, up_, down_ = extractor.extract_features(inputs)
@@ -4414,14 +4414,14 @@ class Trainer:
     #
     #
     #     finally:
-    #         # 强制清理提取器（无论是否报错都执行）
+    #         # Force cleanup of extractor (executed regardless of errors)
     #         extractor.cleanup()
-    #         del extractor  # 确保提取器实例被销毁
+    #         del extractor  # Ensure the extractor instance is destroyed
     #
-    #     # 释放中间数组并触发垃圾回收
+    #     # Release intermediate arrays and trigger garbage collection
     #     # del gate_, up_, down_
-    #     gc.collect()  # 强制回收无引用的对象
-    #     torch.cuda.empty_cache()  # 如果用GPU，清理CUDA缓存
+    #     gc.collect()  # Force reclaim unreferenced objects
+    #     torch.cuda.empty_cache()  # If using GPU, clear CUDA cache
     #     return gate_, up_, down_
 
         # return gate_result_1, up_result_1, down_result_1
@@ -4449,7 +4449,7 @@ class Trainer:
     #         def _register_hooks(self):
     #             # Define hook functions with proper tensor detachment
     #             def gate_hook(module, input, output):
-    #                 # 保存时增加一个维度来区分不同批次
+    #                 # Add a dimension when saving to distinguish different batches
     #                 self.gate_outputs.append(output.detach().cpu().unsqueeze(0))
     #
     #             def up_hook(module, input, output):
@@ -4466,15 +4466,15 @@ class Trainer:
     #
     #         def extract_features(self, inputs, max_length=1000):
     #             """
-    #             处理批量输入文本并提取特征
+    #             Process batch input texts and extract features
     #
     #             Args:
-    #                 input_texts: 文本列表，每个元素是一个对话或文本
-    #                 max_length: 最大序列长度，超过将被截断
+    #                 input_texts: List of texts, each element is a conversation or text
+    #                 max_length: Maximum sequence length, will be truncated if exceeded
     #
     #             Returns:
-    #                 三个numpy数组，分别包含gate、up和down的输出特征
-    #                 形状为 (num_layers, batch_size, seq_len, hidden_size)
+    #                 Three numpy arrays, containing gate, up, and down output features respectively
+    #                 Shape is (num_layers, batch_size, seq_len, hidden_size)
     #             """
     #             # Clear previous results
     #             self.gate_outputs.clear()
@@ -4484,13 +4484,13 @@ class Trainer:
     #             # Forward pass
     #             self.model(**inputs)
     #
-    #             # 合并所有层的输出并调整维度顺序
-    #             # 结果形状: (num_layers, batch_size, seq_len, hidden_size)
+    #             # Merge outputs from all layers and adjust dimension order
+    #             # Result shape: (num_layers, batch_size, seq_len, hidden_size)
     #             gate_features = torch.cat(self.gate_outputs, dim=0).to(torch.float32).numpy()
     #             up_features = torch.cat(self.up_outputs, dim=0).to(torch.float32).numpy()
     #             down_features = torch.cat(self.down_outputs, dim=0).to(torch.float32).numpy()
     #
-    #             # 释放张量内存（清除引用）
+    #             # Release tensor memory (clear references)
     #             del self.gate_outputs[:]
     #             del self.up_outputs[:]
     #             del self.down_outputs[:]
