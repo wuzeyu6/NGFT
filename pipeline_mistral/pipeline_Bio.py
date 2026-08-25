@@ -86,10 +86,10 @@ commands_group = [
     #      'model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.01'],
     #     ['rm', '-rf', 'model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.01']
     # ],
-    [
-        ['llamafactory-cli', 'train', 'examples/train_full_mistral/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05.yaml'],
-        ['python', 'delete_checkpoint.py', '--root_dir', "model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05",'--no-dry-run'],
-        ['python', 'all_eval.py', '--model_path', 'model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05'],
+    # [
+    #     ['llamafactory-cli', 'train', 'examples/train_full_mistral/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05.yaml'],
+    #     ['python', 'delete_checkpoint.py', '--root_dir', "model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05",'--no-dry-run'],
+    #     ['python', 'all_eval.py', '--model_path', 'model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05'],
         # ['python', "eval/mmlu_eval.py", "--save_dir",
         #  "eval_result/mmlu/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05", '--model_name_or_path',
         #  'model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05'],
@@ -99,8 +99,8 @@ commands_group = [
         # ['python', "eval/bbh_eval.py", "--save_dir",
         #  "eval_result/bbh/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05", '--model_name_or_path',
         #  'model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05'],
-        ['rm', '-rf', 'model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05']
-    ],
+    #     ['rm', '-rf', 'model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.05']
+    # ],
     # [
     #     ['llamafactory-cli', 'train', 'examples/train_full_mistral/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.10.yaml'],
     #     ['python', 'delete_checkpoint.py', '--root_dir', "model_result/BioInstruct_MASK/BioInstruct_Mistral-7B-Instruct_0.10",'--no-dry-run'],
